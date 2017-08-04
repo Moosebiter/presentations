@@ -1,0 +1,374 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Implementing a NopCommerce Custom Plugin</title>
+    <meta name="description" content="An introduction to constructing a NopCommerce Plugin">
+    <meta name="author" content="Lee Jones">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="//code.jquery.com/jquery-1.8.0.js"></script>
+    <script src="//code.jquery.com/ui/1.8.23/jquery-ui.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/night.css" id="theme">
+    <link type="text/css" rel="stylesheet" href="fsharp.formatting/styles/style.css" />
+    <link type="text/css" rel="stylesheet" href="fsharp.formatting/styles/deedle.css" />
+    <link type="text/css" rel="stylesheet" href="css/custom.css" />
+    <script src="fsharp.formatting/styles/tips.js" type="text/javascript"></script>
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+    <link rel="stylesheet" href="css/fsreveal.css">
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+			if( window.location.search.match( /print-pdf/gi ) ) {
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = 'css/print/pdf.css';
+				document.getElementsByTagName( 'head' )[0].appendChild( link );
+			}
+    </script>
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+    <script language="javascript" type="text/javascript">
+        function init()
+        {
+            websocket = new WebSocket("ws://"+window.location.host+"/websocket");
+            websocket.onmessage = function(evt) { location.reload(); };
+        }
+        window.addEventListener("load", init, false);
+    </script>
+</head>
+<body>
+    <div class="reveal">
+        
+        <!-- Any section element inside of this container is displayed as a slide -->
+        <div class="slides">
+            <section >
+<h2>Implementing a Base NopCommerce Plugin</h2>
+</section>
+<section >
+<p>This presentation outlines my process used to intially create a NopCommerce plugin. This is just the starting point for your plugin and you will need to implement an interface for the type of plugin you are implementing after this.</p>
+<p><em><strong>For Reference:</strong></em></p>
+<ul>
+<li><a href="https://moosebiter.gitbooks.io/nopcommerce-documentation/content/creating-a-plugin.html">This tutorial in GitBook</a></li>
+<li><em><a href="http://docs.nopcommerce.com/display/en/How+to+write+a+nopCommerce+plugin">The official "How to write a nopCommerce plugin" tutorial</a></em></li>
+</ul>
+</section>
+<section >
+<h3>... Let's begin!</h3>
+</section>
+<section >
+<section >
+<h3>Create a New Class Project</h3>
+<p>Create a new Class Library Project inside the Plugins Directory of the NopCommerce Solution.
+You <strong><em>absolutely MUST change the location</em></strong> of the project to <code>~\[ProjectName]\Plugins\</code> as it will default to be in <code>~\[ProjectName]\</code>.</p>
+<p><img src="images/createproject.png" alt="missing image" /></p>
+<p>The naming convention for the <code>ProjectName</code> is Nop.Plugin.[PluginType].[ProjectName]</p>
+</section>
+<section >
+<p><strong><em>Important Note:</em></strong><br />
+If you do not place the project in the <code>\Plugins\</code> directory your files will not be where nop expects them. So your plugin structure will be off and it will cause problems when you want to run, install your plugin, or put it in source control.</p>
+</section>
+</section>
+<section >
+<h2>Prepare the Project for Development</h2>
+</section>
+<section >
+<h3>1. Remove the file Class1.</h3>
+</section>
+<section >
+<section >
+<h3>2. Add references: You need to add references for use in development for the application.</h3>
+</section>
+<section >
+<p><strong><em>Important Note:</em></strong><br />
+It is absolutely crucial that any library referenced in the <code>\Presentation\Nop.Web\bin\</code> directory have the property of <code>CopyLocal</code> set to <code>False</code>. If this is not set correctly a conflict of files/versions can cause a presentation dll to be overwritten and this can bring down a production NopCommerce server. As a rule of thumb look at the <code>\Presentation\Nop.Web\bin\</code> directory for any library you add and see if it already exists, if it does set CopyLocal to False.</p>
+<p><img src="images/copylocalfalse.png" alt="missing image" /></p>
+</section>
+<section >
+<p>Typically you will need to add at least the below libraries used by NopCommerce as references in your plugin project. <em>Again, make certain they are not copying locally on build if they are already present in nop's presentation bin directory.</em></p>
+<ul>
+<li><strong>Nop.Core:</strong> via Project Reference</li>
+<li><strong>Nop.Data:</strong> via Project Reference</li>
+<li><strong>Nop.Services:</strong> via Project Reference</li>
+<li><strong>Nop.Web.Framework:</strong> via Project Reference</li>
+<li><strong>System.Web:</strong> via Assembly Reference</li>
+<li><strong>EntityFramework:</strong> via NuGet (right click project and click <code>Manage NuGet Packages</code> to install.)</li>
+<li><strong>Microsoft.AspNet.Mvc:</strong> via NuGet</li>
+</ul>
+</section>
+</section>
+<section >
+<h3>3. Set Ouptut Directory in Project Settings</h3>
+<ol>
+<li>Right click your project and select <code>Properties</code></li>
+<li>Go to the <code>Build</code> tab</li>
+<li>Set the output path as <code>..\..\Presentation\Nop.Web\Plugins\[PluginType].[PluginName]\</code> for debug</li>
+<li>Change build to release (<em>and any other build configurations</em>) and repeat <code>Step 3</code>.</li>
+</ol>
+</section>
+<section >
+<h3>4. Add Web.Config</h3>
+<ol>
+<li>Copy the Web.Config from another plugin into the plugin's root directory</li>
+<li>Include it in the solution.</li>
+<li>
+Right Click the file and select <code>Properties</code>
+<ul>
+<li>Set <code>Build Action</code> to <code>Content</code></li>
+<li>Set <code>Copy to Output Directory</code> to <code>Copy if Newer</code></li>
+</ul>
+</li>
+</ol>
+<p><img src="images/copyifnewer.png" alt="missing image" /></p>
+</section>
+<section >
+<section >
+<h3>5. Add Description.txt</h3>
+<ol>
+<li>Add a text file to your plugin's root directory.</li>
+<li>Include it in the solution.</li>
+<li>
+Right Click the file and select <code>Properties</code>
+<ul>
+<li>Set <code>Build Action</code> to <code>Content</code></li>
+<li>Set <code>Copy to Output Directory</code> to <code>Copy if Newer</code></li>
+</ul>
+</li>
+<li>Fill out the contents of the file using the template below.</li>
+</ol>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+<span class="l">8: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="i">Group</span><span class="o">:</span> [<span class="i">PluginType</span>]
+<span class="i">FriendlyName</span><span class="o">:</span> [<span class="i">PluginName</span>]
+<span class="i">SystemName</span><span class="o">:</span> <span class="i">Nop</span><span class="o">.</span><span class="i">Plugin</span><span class="o">.</span>[<span class="i">PluginType</span>]<span class="o">.</span>[<span class="i">PluginName</span>]
+<span class="i">Version</span><span class="o">:</span> <span class="n">1.0</span>
+<span class="i">SupportedVersions</span><span class="o">:</span> [<span class="i">CurrentNopVersion</span>, <span class="i">ex</span><span class="o">.</span> <span class="n">3.08</span>]
+<span class="i">Author</span><span class="o">:</span> [<span class="i">YourName</span>]
+<span class="i">DisplayOrder</span><span class="o">:</span> <span class="n">1</span>
+<span class="i">FileName</span><span class="o">:</span> <span class="i">Nop</span><span class="o">.</span><span class="i">Plugin</span><span class="o">.</span>[<span class="i">PluginType</span>]<span class="o">.</span>[<span class="i">PluginName</span>]<span class="o">.</span><span class="i">dll</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<p><strong>Plugin Type Definitions:</strong></p>
+<ul>
+<li><strong>IExternalAuthenticationMethod:</strong> For creating external authentication methods such as Facebook, Twitter, OpenID, etc.</li>
+<li><strong>IWidgetPlugin:</strong> Allows you to create widgets. Widgets are rendered within widget zones on your site.</li>
+<li><strong>IExchangeRateProvider:</strong> For getting currency exchange rate.</li>
+<li><strong>IDiscountRequirementRule:</strong> Allows you to create new discount rules such as "Billing country of a customer should be…"</li>
+<li><strong>IPaymentMethod:</strong> Plugins which are used for payment processing.</li>
+<li><strong>IShippingRateComputationMethod:</strong> These plugins are used for retrieving accepted delivery methods and appropriate shipping rates. For example, UPS, UPS, FedEx, etc.</li>
+<li><strong>ITaxProvider:</strong> Tax providers are used for getting tax rates.</li>
+<li><strong>IMiscPlugin:</strong> Any other type of plugin that does not meet the above criteria and functionality.</li>
+</ul>
+</section>
+<section >
+<p><strong><em>Important Note:</em></strong><br />
+If you do not add this file and it is not set to output on build you will not see your plugin in NopCommerce's plugin list.</p>
+</section>
+</section>
+<section >
+<h3>6. Add Project Logo</h3>
+<ol>
+<li>Add a jpg file named <code>logo.jpg</code> as your plugin's logo to the plugin's root directory</li>
+<li>Include it in the solution.</li>
+<li>
+Right Click the file and select <code>Properties</code>
+<ul>
+<li>Set <code>Build Action</code> to <code>Content</code></li>
+<li>Set <code>Copy to Output Directory</code> to <code>Copy if Newer</code></li>
+</ul>
+</li>
+</ol>
+</section>
+<section >
+<section >
+<h3>7. CustomViewEngine and Plugin File Structure</h3>
+<ul>
+<li>Create a new folder in the root directory of your plugin called <code>Infrastructure</code> and within it create a new file called <code>CustomViewEngine.cs</code> containing the following code</li>
+</ul>
+</section>
+<section id="customviewengine">
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+<span class="l">16: </span>
+<span class="l">17: </span>
+<span class="l">18: </span>
+<span class="l">19: </span>
+<span class="l">20: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">using</span> System;
+<span class="k">using</span> System.Collections.Generic;
+<span class="k">using</span> System.Linq;
+<span class="k">using</span> System.Text;
+<span class="k">using</span> System.Threading.Tasks;
+<span class="k">using</span> Nop.Web.Framework.Themes;
+
+<span class="k">namespace</span> Nop.Plugin.[PluginType]<span class="o">.</span>[PluginName].Infrastructure
+{
+    <span class="k">public</span> <span class="k">class</span> CustomViewEngine <span class="o">:</span> ThemeableRazorViewEngine
+    {
+        <span class="k">public</span> CustomViewEngine()
+        {
+            ViewLocationFormats <span class="o">=</span> <span class="k">new</span>[] 
+                { <span class="s">"~/Plugins/[PluginType].[PluginName]/Views/{1}/{0}.cshtml"</span> };
+            PartialViewLocationFormats <span class="o">=</span> <span class="k">new</span>[] 
+                { <span class="s">"~/Plugins/[PluginType].[PluginName]/Views/Shared/{0}.cshtml"</span> };
+        }
+    }
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<ul>
+<li>id: routeprovider</li>
+<li><p>In the root directory of your plugin create a file called <code>RouteProvider.cs</code> containing the following code:</p></li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+<span class="l">16: </span>
+<span class="l">17: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">using</span> System.Web.Mvc;
+<span class="k">using</span> System.Web.Routing;
+<span class="k">using</span> Nop.Plugin.[PluginType]<span class="o">.</span>[PluginName].Infrastructure;
+<span class="k">using</span> Nop.Web.Framework.Mvc.Routes;
+
+<span class="k">namespace</span> Nop.Plugin.[PluginType]<span class="o">.</span>[PluginName]
+{
+    <span class="k">public</span> <span class="k">class</span> RouteProvider <span class="o">:</span> IRouteProvider
+    {
+        <span class="k">public</span> <span class="k">int</span> Priority <span class="o">=</span><span class="o">&gt;</span> <span class="n">0</span>;
+
+        <span class="k">public</span> <span class="k">void</span> RegisterRoutes(RouteCollection routes)
+        {
+            ViewEngines.Engines.Insert(<span class="n">0</span>, <span class="k">new</span> CustomViewEngine());
+        }
+    }
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<ul>
+<li>
+<p>In the root directory of your plugin create the following directories:</p>
+<ul>
+<li><p><code>Controllers</code></p></li>
+<li><p><code>Models</code></p></li>
+<li>
+<p><code>Views</code></p>
+<ul>
+<li><p><code>Shared</code></p></li>
+<li><p><code>[PluginName]</code></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>In the <code>Controllers</code> directory create a file called <code>[PluginName]Controller.cs</code> that inherits <code>BasePluginController</code> and include the using for <code>System.Web.Mvc</code> and <code>Nop.Web.Framework.Controllers</code>. Within the controller you can now <code>return View()</code> of the method/route name as you would in a normal MVC project. This simplifies having to put the path relative to the presentation project in every route as most of the Nop documentation directs you to do.</p></li>
+</ul>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">using</span> System.Web.Mvc;
+<span class="k">using</span> Nop.Web.Framework.Controllers;
+
+<span class="k">namespace</span> Nop.Plugin.[PluginType]<span class="o">.</span>[PluginName].Controllers
+{
+    <span class="k">public</span> <span class="k">class</span> [PluginName]Controller <span class="o">:</span> BasePluginController
+    {<span class="o">.</span><span class="o">.</span><span class="o">.</span>
+</code></pre></td></tr></table>
+</section>
+</section>
+<section >
+<h3>8. Create Plugin class</h3>
+<p>Create the main class for your plugin. See specific plugin type tutorials for how to create and implement the different plugin interfaces.</p>
+<p>More Tutorials:</p>
+<ul>
+<li><a href="NopCommerceMiscPlugin.html">Implementing a NopCommerce Misc Plugin Interface</a></li>
+</ul>
+</section>
+
+
+        </div>
+    </div>
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+    <script>
+        // Add the nohighlight class and data-noescape attribute to code elements that have already been formatted by FSharp.Formatting
+        $('pre.highlighted code').addClass('nohighlight').attr('data-noescape', '');
+
+        // Full list of configuration options available here:
+        // https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            controls: true,
+            progress: true,
+            history: true,
+            center: true,
+
+            transition: 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+            // Parallax scrolling
+            // parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+            // parallaxBackgroundSize: '2100px 900px',
+
+            // Optional libraries used to extend on reveal.js
+            dependencies: [
+                { src: 'lib/js/classList.js', condition: function () { return !document.body.classList; } },
+                { src: 'plugin/markdown/marked.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/markdown/markdown.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/highlight/highlight.js', async: true, callback: function () { hljs.initHighlightingOnLoad(); } },
+                { src: 'plugin/zoom-js/zoom.js', async: true, condition: function () { return !!document.body.classList; } },
+                { src: 'plugin/notes/notes.js', async: true, condition: function () { return !!document.body.classList; } }
+            ]
+        });
+
+    </script>
+</body>
+</html>
+
