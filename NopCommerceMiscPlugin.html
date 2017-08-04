@@ -1,0 +1,676 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Implementing a NopCommerce Misc Plugin Interface</title>
+    <meta name="description" content="An introduction to constructing a NopCommerce Misc Plugin">
+    <meta name="author" content="Lee Jones">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="//code.jquery.com/jquery-1.8.0.js"></script>
+    <script src="//code.jquery.com/ui/1.8.23/jquery-ui.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/night.css" id="theme">
+    <link type="text/css" rel="stylesheet" href="fsharp.formatting/styles/style.css" />
+    <link type="text/css" rel="stylesheet" href="fsharp.formatting/styles/deedle.css" />
+    <link type="text/css" rel="stylesheet" href="css/custom.css" />
+    <script src="fsharp.formatting/styles/tips.js" type="text/javascript"></script>
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+    <link rel="stylesheet" href="css/fsreveal.css">
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+			if( window.location.search.match( /print-pdf/gi ) ) {
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = 'css/print/pdf.css';
+				document.getElementsByTagName( 'head' )[0].appendChild( link );
+			}
+    </script>
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+    <script language="javascript" type="text/javascript">
+        function init()
+        {
+            websocket = new WebSocket("ws://"+window.location.host+"/websocket");
+            websocket.onmessage = function(evt) { location.reload(); };
+        }
+        window.addEventListener("load", init, false);
+    </script>
+</head>
+<body>
+    <div class="reveal">
+        
+        <!-- Any section element inside of this container is displayed as a slide -->
+        <div class="slides">
+            <section >
+<h2>Implementing a NopCommerce Misc Plugin Interface</h2>
+</section>
+<section >
+<h3>Initial Setup</h3>
+<p>Follow the steps in the <a href="NopCommerceBasePlugin.html">Implementing a Base NopCommerce Plugin</a> tutorial and name your project<br />
+<code>Nop.Plugin.Misc.[ProjectName]</code></p>
+<p>This tutorial is directed toward building upon the previous tutorial in order to implement a misc plugin and demonstrate some of NopCommere's plugin capabilities.</p>
+</section>
+<section >
+<h2>Description.txt</h2>
+<p>Set your plugin as a <code>Misc</code> plugin type in the <code>description.txt</code> file.</p>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+<span class="l">8: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="fsharp"><span class="i">Group</span><span class="o">:</span> <span class="i">Misc</span>
+<span class="i">FriendlyName</span><span class="o">:</span> [<span class="i">PluginName</span>]
+<span class="i">SystemName</span><span class="o">:</span> <span class="i">Nop</span><span class="o">.</span><span class="i">Plugin</span><span class="o">.</span><span class="i">Misc</span><span class="o">.</span>[<span class="i">PluginName</span>]
+<span class="i">Version</span><span class="o">:</span> <span class="n">1.0</span>
+<span class="i">SupportedVersions</span><span class="o">:</span> [<span class="i">CurrentNopVersion</span>, <span class="i">ex</span><span class="o">.</span> <span class="n">3.08</span>]
+<span class="i">Author</span><span class="o">:</span> [<span class="i">YourName</span>]
+<span class="i">DisplayOrder</span><span class="o">:</span> <span class="n">1</span>
+<span class="i">FileName</span><span class="o">:</span> <span class="i">Nop</span><span class="o">.</span><span class="i">Plugin</span><span class="o">.</span><span class="i">Misc</span><span class="o">.</span>[<span class="i">PluginName</span>]<span class="o">.</span><span class="i">dll</span>
+</code></pre></td>
+</tr>
+</table>
+</section>
+<section >
+<section id="createmain">
+<h2>Create the main Plugin Class file</h2>
+</section>
+<section >
+<h3>1. In the root directory of your plugin create a new C# file named</h3>
+<p><code>[PluginName]Plugin.cs</code></p>
+</section>
+<section >
+<h3>2. Make your plugin implement  <code>BasePlugin</code> and <code>IMiscPlugin</code></h3>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">namespace</span> Nop.Plugin.Misc.[PluginName]
+{
+    <span class="k">public</span> <span class="k">class</span> [ProjectName]Plugin <span class="o">:</span> BasePlugin, IMiscPlugin
+    {
+        <span class="o">.</span><span class="o">.</span><span class="o">.</span>
+    }
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<h3>3. Implement Plugin Class Contructor and Private Members</h3>
+<p>Add any needed NopCommerce Services that you need to use in your plugin by using dependency injection.</p>
+<h6>Add the needed private members, ex:</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">private</span> <span class="k">readonly</span> ISettingService _settingService;
+<span class="k">private</span> <span class="k">readonly</span> ILocalizationService _localizationService;
+<span class="k">private</span> <span class="k">readonly</span> ILogger _logger;
+</code></pre></td></tr></table>
+</section>
+<section >
+<h3>3. Implement Plugin Class Contructor and Private Members (cont'd.)</h3>
+<h6>Implement the constructor and inject the services into your local members, ex:</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> [PluginName]Plugin(
+    ISettingService settingService
+    ILocalizationService localizationService
+    , ILogger logger
+    )
+{
+    _settingService <span class="o">=</span> settingService;
+    _localizationService <span class="o">=</span> localizationService;
+    _logger <span class="o">=</span> logger;
+}
+</code></pre></td></tr></table>
+</section>
+<section id="configureroute">
+<h3>4. Implement IMisc Plugin Members</h3>
+<h6>Implement the configuration route for the plugin's <a href="#/configuration">configuration page</a> in NopCommerce:</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">void</span> GetConfigurationRoute(
+    <span class="k">out</span> <span class="k">string</span> actionName, 
+    <span class="k">out</span> <span class="k">string</span> controllerName, 
+    <span class="k">out</span> RouteValueDictionary routeValues)
+{
+    actionName <span class="o">=</span> <span class="s">"Configure"</span>;
+    controllerName <span class="o">=</span> <span class="s">"[PluginName]"</span>;
+    routeValues <span class="o">=</span> <span class="k">new</span> RouteValueDictionary { 
+        { <span class="s">"Namespaces"</span>, <span class="s">"Nop.Plugin.Misc.[PluginName].Controllers"</span> },
+        { <span class="s">"area"</span>, <span class="k">null</span> } };
+}
+</code></pre></td></tr></table>
+<p><strong><em>Note:</em></strong> ControllerName should not include the word <code>Controller</code> from <code>[PluginName]Controller.cs</code></p>
+</section>
+<section >
+<h3>5. Implement Base Plugin Members as neccessary</h3>
+<h6>You may want to implement a method from the base plugin.  For example, given a that you set up a settings class for your plugin that implements <code>ISettings</code> like this:</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">class</span> [PluginName]Settings <span class="o">:</span> ISettings
+    {
+        <span class="k">public</span> <span class="k">bool</span> Enabled { get; set; }
+    }
+</code></pre></td></tr></table>
+</section>
+<section >
+<h3>5. Implement Base Plugin Members as neccessary (cont'd.)</h3>
+<h6>You may want initialize settings or pepare NopCommerce in another way when the plugin is installed through NopCommerce Admin:</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">override</span> <span class="k">void</span> Install()
+{
+    <span class="k">var</span> settings <span class="o">=</span> <span class="k">new</span> [PluginName]Settings()
+    {
+        Enabled <span class="o">=</span> <span class="k">true</span>
+    };
+    _settingService.SaveSetting(settings);
+
+    <span class="k">base</span>.Install();
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<h3>5. Implement Base Plugin Members as neccessary (cont'd.)</h3>
+<p>And to remove them when the plugin is uninstalled:</p>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">override</span> <span class="k">void</span> Uninstall()
+{
+    _settingService.DeleteSetting&lt;[PluginName]Settings&gt;();
+
+    <span class="k">base</span>.Uninstall();
+}
+</code></pre></td></tr></table>
+</section>
+</section>
+<section >
+<section id="configuration">
+<h2>Admin Configuration Page</h2>
+</section>
+<section >
+<h3>A configuration page may needed to configure a plugin's settings and/or other features.</h3>
+<p>You can find the button to access a plugin's configuration page in Admin &gt; Configuration &gt; Plugins &gt; Local Plugins under the Plugin Info column</p>
+<p><img src="images/adminpluginconfigurebutton.png" alt="missing image" /></p>
+</section>
+<section >
+<h3>1. Create View</h3>
+<h6>1. If you have not already, Add a <code>Views</code> folder into your plugin's root directory.</h6>
+<h6>2. Create a subfolder called <code>[PluginName]</code>.</h6>
+<h6>3. Create a view named <code>Configure.cshtml</code></h6>
+</section>
+<section >
+<h3>2. Register Route</h3>
+<p>see <a href="#/configureroute">Implement IMisc Plugin Members</a> from the <a href="#/createmain">Create the main Plugin Class file</a> slides for instructions on how to add the route to the plugin controller</p>
+</section>
+<section >
+<h3>3. Create Routes In Controller</h3>
+<h6>1. Open your <code>Controllers/[PluginName]Controller.cs</code> file.</h6>
+<h6>2. Dependency inject any ISettingService, ILocalizationService, or other settings or services that you need into the controller's constructor</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">private</span> <span class="k">readonly</span> [PluginName]Settings _[PluginName]Settings;
+<span class="k">private</span> <span class="k">readonly</span> ISettingService _settingService;
+<span class="k">private</span> <span class="k">readonly</span> ILocalizationService _localizationService;
+
+<span class="k">public</span> GuestAccountMergeController(
+    [PluginName]Settings [PluginName]Settings,
+    ISettingService settingService,
+    ILocalizationService localizationService)
+{
+    _[PluginName]Settings <span class="o">=</span> [PluginName]Settings;
+    _settingService <span class="o">=</span> settingService;
+    _localizationService <span class="o">=</span> localizationService;
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<h3>3. Create Routes In Controller (cont'd.)</h3>
+<h6>3. Add a route called Configure and return whatever is relevant to your Configuration view.</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> ActionResult Configure()
+{
+    <span class="k">var</span> model <span class="o">=</span> <span class="k">new</span> [ConfigurationViewModelName]();
+    model.Enabled <span class="o">=</span> _[PluginName]Settings.Enabled;
+
+    <span class="k">return</span> View(model);
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<h3>3. Create Routes In Controller (cont'd.)</h3>
+<h6>4. Add another route for posting back changes from your view as appropriate</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs">[HttpPost, ActionName(<span class="s">"Configure"</span>)]
+[FormValueRequired(<span class="s">"save"</span>)]
+<span class="k">public</span> ActionResult Configure([ConfigurationViewModelName] model)
+{
+    <span class="k">if</span> (!ModelState.IsValid)
+    {
+        <span class="k">return</span> Configure();
+    }
+
+    _[PluginName]Settings.Enabled <span class="o">=</span> model.Enabled;
+    _settingService.SaveSetting(_[PluginName]Settings);
+    SuccessNotification(_localizationService.GetResource(<span class="s">"Admin.Plugins.Saved"</span>));
+
+    <span class="k">return</span> Configure();
+}
+</code></pre></td></tr></table>
+</section>
+</section>
+<section >
+<section >
+<h2>Admin Side Menu</h2>
+</section>
+<section >
+<p>You can add an admin menu link in the NopCommerce Side Menu for your plugin.</p>
+<h6>1. Open <code>[PluginName]Plugin.cs</code></h6>
+<h6>2. Implement the <code>IAdminMenuPlugin</code> Interface.</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">namespace</span> Nop.Plugin.Misc.[PluginName]
+{
+    <span class="k">public</span> <span class="k">class</span> [ProjectName]Plugin <span class="o">:</span> BasePlugin, IMiscPlugin, IAdminMenuPlugin
+    {
+        <span class="o">.</span><span class="o">.</span><span class="o">.</span>
+    }
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<h6>3. Add the Admin Menu Link</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+<span class="l">16: </span>
+<span class="l">17: </span>
+<span class="l">18: </span>
+<span class="l">19: </span>
+<span class="l">20: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">void</span> ManageSiteMap(SiteMapNode rootNode)
+{
+    <span class="k">var</span> menuItem <span class="o">=</span> <span class="k">new</span> SiteMapNode()
+    {
+        SystemName <span class="o">=</span> <span class="s">"[ProjectName]AdminMenuLink"</span>,
+        Title <span class="o">=</span> <span class="s">"[ProjectName]"</span>,
+        ControllerName <span class="o">=</span> <span class="s">"[ProjectName]"</span>,
+        ActionName <span class="o">=</span> <span class="s">"Configure"</span>,
+        Visible <span class="o">=</span> <span class="k">true</span>,
+        RouteValues <span class="o">=</span> <span class="k">new</span> RouteValueDictionary() { { <span class="s">"area"</span>, <span class="k">null</span> } }
+    };
+    <span class="k">var</span> pluginNode <span class="o">=</span> rootNode
+        .ChildNodes
+        .FirstOrDefault(x <span class="o">=</span><span class="o">&gt;</span> x.SystemName <span class="o">=</span><span class="o">=</span> <span class="s">"Third party plugins"</span>);
+
+    <span class="k">if</span> (pluginNode <span class="o">!</span><span class="o">=</span> <span class="k">null</span>)
+        pluginNode.ChildNodes.Add(menuItem);
+    <span class="k">else</span>
+        rootNode.ChildNodes.Add(menuItem);
+}
+</code></pre></td></tr></table>
+</section>
+</section>
+<section >
+<section >
+<h2>Overriding NopCommerce Views</h2>
+<p>This relies on the <a href="NopCommerceBasePlugin.html#/customviewengine">Custom View Engine</a> and <a href="NopCommerceBasePlugin.html#/customviewengine">Route Provider</a> implementation from the <a href="NopCommerceBasePlugin.html">Implementing a Base NopCommerce Plugin</a> tutorial.</p>
+</section>
+<section >
+<ol>
+<li>Locate the view that contains the code that you want to override in NopCommerce</li>
+<li>Create a directory in your plugin named the same as the view's directory in the presentation project, ex. <code>Views/Product/</code></li>
+<li>Create a view with the same name in the directory, ex. <code>_DownloadSample.cshtml</code></li>
+<li>Copy and Paste the code from the original view and modify as needed</li>
+</ol>
+</section>
+</section>
+<section >
+<section >
+<h2>Overriding NopCommerce Controller Methods</h2>
+<p>This relies on the <a href="NopCommerceBasePlugin.html#/customviewengine">Custom View Engine</a> and <a href="NopCommerceBasePlugin.html#/customviewengine">Route Provider</a> implementation from the <a href="NopCommerceBasePlugin.html">Implementing a Base NopCommerce Plugin</a> tutorial.</p>
+</section>
+<section >
+<ol>
+<li>Locate the controller that contains the code that you want to override in NopCommerce</li>
+<li>Create a controller in your plugin's controller directory named the same as the controller in the presentation project, ex. <code>Controllers/CommonController.cs</code></li>
+<li>Dependency inject whichever services or settings you need.</li>
+<li>write the method and add your logic inside.</li>
+</ol>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l">1: </span>
+<span class="l">2: </span>
+<span class="l">3: </span>
+<span class="l">4: </span>
+<span class="l">5: </span>
+<span class="l">6: </span>
+<span class="l">7: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">virtual</span> ActionResult AdminHeaderLinks()
+{
+    <span class="k">var</span> x <span class="o">=</span> DoNewStuff();
+    <span class="k">var</span> model <span class="o">=</span> GetViewModel(x);
+
+    <span class="k">return</span> PartialView(model);
+}
+</code></pre></td></tr></table>
+</section>
+</section>
+<section >
+<section >
+<h2>NopCommerce Event Consumers</h2>
+</section>
+<section >
+<p>List of Events:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td><ul>
+<li>ProductSearchEvent</li>
+</ul></td>
+<td><ul>
+<li>ProductReviewApprovedEvent</li>
+</ul></td>
+</tr>
+<tr class="even">
+<td><ul>
+<li>EntityInserted</li>
+</ul></td>
+<td><ul>
+<li>EntityUpdated</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td><ul>
+<li>EntityDeleted</li>
+</ul></td>
+<td><ul>
+<li>EmailSubscribedEvent</li>
+</ul></td>
+</tr>
+<tr class="even">
+<td><ul>
+<li>EmailUnsubscribedEvent</li>
+</ul></td>
+<td><ul>
+<li>EntityTokensAddedEvent</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td><ul>
+<li>MessageTokensAddedEvent</li>
+</ul></td>
+<td><ul>
+<li>PublishNewsletterSubscribe</li>
+</ul></td>
+</tr>
+<tr class="even">
+<td><ul>
+<li>PublishNewsletterUnsubscribe</li>
+</ul></td>
+<td><ul>
+<li>OrderPaidEvent</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td><ul>
+<li>OrderPlacedEvent</li>
+</ul></td>
+<td><ul>
+<li>PublishShipmentSent</li>
+</ul></td>
+</tr>
+<tr class="even">
+<td><ul>
+<li>PublishShipmentDelivered</li>
+</ul></td>
+<td><ul>
+<li>OrderCancelledEvent</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td><ul>
+<li>OrderRefundedEvent</li>
+</ul></td>
+<td><ul>
+<li>ShipmentSentEvent</li>
+</ul></td>
+</tr>
+<tr class="even">
+<td><ul>
+<li>ShipmentDeliveredEvent</li>
+</ul></td>
+<td><ul>
+<li>ProductReviewApprovedEvent</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td><ul>
+<li>CustomerRegisteredEvent</li>
+</ul></td>
+<td><ul>
+<li>CustomerLoggedin</li>
+</ul></td>
+</tr>
+</tbody>
+</table>
+
+</section>
+<section >
+<h6>1. Create an <code>Events</code> Directory in your plugin's root directory</h6>
+<h6>2. Create a new file for the particular event you want to consume, ex. <code>CustomerRegisteredEventConsumer.cs</code></h6>
+</section>
+<section >
+<h6>3. Implement the <code>IConsumer&lt;Event&gt;</code> interface and dependency inject <code>IPluginFinder</code> and <code>IStoreContext</code></h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
+<span class="l">16: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">namespace</span> Nop.Plugin.Misc.[ProjectName].Events
+{
+    <span class="k">public</span> <span class="k">class</span> CustomerRegisteredEventConsumer <span class="o">:</span> IConsumer&lt;CustomerRegisteredEvent&gt;
+    {
+        <span class="k">private</span> <span class="k">readonly</span> IPluginFinder _pluginFinder;
+        <span class="k">private</span> <span class="k">readonly</span> IStoreContext _storeContext;
+
+        <span class="k">public</span> CustomerRegisteredEventConsumer(
+            IPluginFinder pluginFinder,
+            IStoreContext storeContext)
+        {
+            _pluginFinder <span class="o">=</span> pluginFinder;
+            _storeContext <span class="o">=</span> storeContext;
+        }
+    }
+}
+</code></pre></td></tr></table>
+</section>
+<section >
+<h6>4. Implement a HandleEvent Method</h6>
+<table class="pre"><tr><td class="lines"><pre class="fssnip"><span class="l"> 1: </span>
+<span class="l"> 2: </span>
+<span class="l"> 3: </span>
+<span class="l"> 4: </span>
+<span class="l"> 5: </span>
+<span class="l"> 6: </span>
+<span class="l"> 7: </span>
+<span class="l"> 8: </span>
+<span class="l"> 9: </span>
+<span class="l">10: </span>
+<span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+</pre></td>
+<td class="snippet"><pre class="fssnip highlighted"><code lang="cs"><span class="k">public</span> <span class="k">void</span> HandleEvent(CustomerRegisteredEvent eventMessage)
+{
+    <span class="k">var</span> pluginDescriptor <span class="o">=</span> _pluginFinder
+        .GetPluginDescriptorBySystemName(<span class="s">"Misc.[PluginName]"</span>);
+
+    <span class="k">if</span> (pluginDescriptor <span class="o">=</span><span class="o">=</span> <span class="k">null</span>)
+        <span class="k">return</span>;
+    <span class="k">if</span> (!_pluginFinder
+        .AuthenticateStore(pluginDescriptor, _storeContext.CurrentStore.Id))
+        <span class="k">return</span>;
+    <span class="k">var</span> plugin <span class="o">=</span> pluginDescriptor.Instance() <span class="k">as</span> [PluginName]Plugin;
+
+    plugin?.DoStuff(eventMessage);
+}
+</code></pre></td></tr></table>
+</section>
+</section>
+
+
+        </div>
+    </div>
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+    <script>
+        // Add the nohighlight class and data-noescape attribute to code elements that have already been formatted by FSharp.Formatting
+        $('pre.highlighted code').addClass('nohighlight').attr('data-noescape', '');
+
+        // Full list of configuration options available here:
+        // https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            controls: true,
+            progress: true,
+            history: true,
+            center: true,
+
+            transition: 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+            // Parallax scrolling
+            // parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+            // parallaxBackgroundSize: '2100px 900px',
+
+            // Optional libraries used to extend on reveal.js
+            dependencies: [
+                { src: 'lib/js/classList.js', condition: function () { return !document.body.classList; } },
+                { src: 'plugin/markdown/marked.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/markdown/markdown.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/highlight/highlight.js', async: true, callback: function () { hljs.initHighlightingOnLoad(); } },
+                { src: 'plugin/zoom-js/zoom.js', async: true, condition: function () { return !!document.body.classList; } },
+                { src: 'plugin/notes/notes.js', async: true, condition: function () { return !!document.body.classList; } }
+            ]
+        });
+
+    </script>
+</body>
+</html>
+
